@@ -454,6 +454,188 @@ const UserMessage: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
+const MessageActions: React.FC<{
+  message: Message;
+}> = ({ message }) => {
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+
+  const handleCopy = () => {
+    let textToCopy = '';
+
+    // Add question (if available from message context)
+    if (message.query) {
+      textToCopy += `Question: ${message.query}\n\n`;
+    }
+
+    // Add answer in plain text
+    const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+    textToCopy += `Answer:\n${answerText}\n\n`;
+
+    // Add file links if available
+    if (message.response?.file_links && message.response.file_links.length > 0) {
+      textToCopy += 'Links:\n';
+      message.response.file_links.forEach(link => {
+        textToCopy += `${link.title}: ${link.url}\n`;
+      });
+    }
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      alert('Content copied to clipboard!');
+    });
+  };
+
+  const handleShare = () => {
+    const currentUrl = window.location.href;
+    navigator.clipboard.writeText(currentUrl).then(() => {
+      alert('URL copied to clipboard!');
+    });
+  };
+
+  const generatePDF = () => {
+    // This would require a PDF library like jsPDF
+    console.log('PDF export functionality - requires PDF library implementation');
+    alert('PDF export feature coming soon!');
+  };
+
+  const generateMarkdown = () => {
+    let markdown = '';
+
+    if (message.query) {
+      markdown += `# ${message.query}\n\n`;
+    }
+
+    const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+    markdown += `## Answer\n\n${answerText}\n\n`;
+
+    if (message.response?.file_links && message.response.file_links.length > 0) {
+      markdown += '## Links\n\n';
+      message.response.file_links.forEach(link => {
+        markdown += `- [${link.title}](${link.url})\n`;
+      });
+    }
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hutech-response.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateDOCX = () => {
+    // This would require a DOCX library
+    console.log('DOCX export functionality - requires DOCX library implementation');
+    alert('DOCX export feature coming soon!');
+  };
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    if (isDisliked) setIsDisliked(false);
+  };
+
+  const handleDislike = () => {
+    setIsDisliked(!isDisliked);
+    if (isLiked) setIsLiked(false);
+  };
+
+  return (
+    <div className="flex items-center justify-start gap-2 px-4 py-2 border-t border-gray-100">
+      {/* Copy Button */}
+      <button
+        onClick={handleCopy}
+        className="flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+        title="Copy content"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+        </svg>
+        Copy
+      </button>
+
+      {/* Share Button */}
+      <button
+        onClick={handleShare}
+        className="flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+        title="Share URL"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+        </svg>
+        Share
+      </button>
+
+      {/* Export Button with Dropdown */}
+      <div className="relative">
+        <button
+          onClick={() => setShowExportDropdown(!showExportDropdown)}
+          className="flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+          title="Export content"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Export
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-3 h-3">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        {showExportDropdown && (
+          <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-32">
+            <button
+              onClick={() => { generatePDF(); setShowExportDropdown(false); }}
+              className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              PDF
+            </button>
+            <button
+              onClick={() => { generateMarkdown(); setShowExportDropdown(false); }}
+              className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Markdown
+            </button>
+            <button
+              onClick={() => { generateDOCX(); setShowExportDropdown(false); }}
+              className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              DOCX
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Like Button */}
+      <button
+        onClick={handleLike}
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm ${
+          isLiked ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+        }`}
+        title="Like"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.398.83 1.169 1.398 2.02 1.398h.716c.83 0 1.598-.481 1.998-1.25a.739.739 0 00.109-.376c0-.621-.504-1.125-1.125-1.125H9.375c-.621 0-1.125.504-1.125 1.125v.375M5.904 18.75L7.5 16.5H5.904z" />
+        </svg>
+      </button>
+
+      {/* Dislike Button */}
+      <button
+        onClick={handleDislike}
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm ${
+          isDisliked ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+        }`}
+        title="Dislike"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill={isDisliked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4 rotate-180">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.398.83 1.169 1.398 2.02 1.398h.716c.83 0 1.598-.481 1.998-1.25a.739.739 0 00.109-.376c0-.621-.504-1.125-1.125-1.125H9.375c-.621 0-1.125.504-1.125 1.125v.375M5.904 18.75L7.5 16.5H5.904z" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
 const BotMessage: React.FC<{
   message: Message;
   onSuggestionClick: (suggestion: string) => void;
