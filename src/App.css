@@ -110,6 +110,10 @@
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
+        .suggestion-button:hover svg {
+          color: #6b7280;
+        }
+
         /* Custom carousel styling */
         .card-carousel-container {
           display: flex;
