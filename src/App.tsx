@@ -111,7 +111,7 @@ function App() {
       category: 'Location'
     },
     {
-      icon: '⚙��',
+      icon: '⚙️',
       title: 'Services',
       description: 'What services do we provide?',
       category: 'Services'
@@ -721,20 +721,47 @@ const MessageActions: React.FC<{
           {showExportDropdown && (
             <div className="export-dropdown absolute left-0 top-full mt-1 bg-white rounded-md shadow-lg z-10 min-w-32">
               <button
-                onClick={() => { generatePDF(); setShowExportDropdown(false); }}
+                onClick={() => {
+                  try {
+                    generatePDF();
+                    setShowExportDropdown(false);
+                  } catch (error) {
+                    console.error('PDF export error:', error);
+                    alert('PDF export failed. Please try again.');
+                  }
+                }}
                 className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                title="Export as PDF (text format)"
               >
                 PDF
               </button>
               <button
-                onClick={() => { generateMarkdown(); setShowExportDropdown(false); }}
+                onClick={() => {
+                  try {
+                    generateMarkdown();
+                    setShowExportDropdown(false);
+                  } catch (error) {
+                    console.error('Markdown export error:', error);
+                    alert('Markdown export failed. Please try again.');
+                  }
+                }}
                 className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                title="Export as Markdown"
               >
                 Markdown
               </button>
               <button
-                onClick={() => { generateDOCX(); setShowExportDropdown(false); }}
+                onClick={() => {
+                  try {
+                    generateDOCX();
+                    setShowExportDropdown(false);
+                  } catch (error) {
+                    console.error('DOCX export error:', error);
+                    alert('DOCX export failed. Please try again.');
+                  }
+                }}
                 className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                title="Export as DOCX (HTML format)"
               >
                 DOCX
               </button>
