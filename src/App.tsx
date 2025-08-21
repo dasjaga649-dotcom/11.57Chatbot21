@@ -571,7 +571,9 @@ const MessageActions: React.FC<{
       })
       .catch((err) => {
         console.error('Share failed:', err);
-        alert('Share failed. Please copy the URL manually: ' + currentUrl);
+        // Show URL in a way that's easy to copy
+        const shareText = `Share failed due to browser restrictions. Please manually copy this URL:\n\n${currentUrl}`;
+        alert(shareText);
       });
   };
 
