@@ -557,7 +557,9 @@ const MessageActions: React.FC<{
       })
       .catch((err) => {
         console.error('Copy failed:', err);
-        alert('Copy failed. Please select and copy the text manually.');
+        // Show the content in a modal or alert for manual copying
+        const copyText = `Copy failed due to browser restrictions. Please manually copy this content:\n\n${textToCopy}`;
+        alert(copyText);
       });
   };
 
