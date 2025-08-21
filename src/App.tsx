@@ -13,6 +13,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   response?: BotResponse;
+  query?: string; // Store the original user question for bot messages
 }
 
 interface BotResponse {
@@ -116,7 +117,7 @@ function App() {
       category: 'Services'
     },
     {
-      icon: '🏭',
+      icon: '��',
       title: 'Industries',
       description: 'What industries do we serve?',
       category: 'Industries'
