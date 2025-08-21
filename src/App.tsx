@@ -218,7 +218,8 @@ function App() {
         id: Date.now() + 1,
         text: "Sorry, I'm having trouble connecting to the server. Please make sure your backend is running on http://localhost:3001",
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        query: messageText
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
