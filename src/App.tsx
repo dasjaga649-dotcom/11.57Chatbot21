@@ -207,7 +207,8 @@ function App() {
         text: botResponse.answer || "Sorry, I couldn't process your request.",
         isUser: false,
         timestamp: new Date(),
-        response: botResponse
+        response: botResponse,
+        query: messageText // Store the user's question
       };
 
       setMessages(prev => [...prev, botMessage]);
