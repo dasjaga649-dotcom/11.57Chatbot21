@@ -480,30 +480,54 @@ const MessageActions: React.FC<{
   }, []);
 
   const copyToClipboard = (text: string) => {
-    // Try modern clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(text);
-    } else {
-      // Fallback for older browsers or insecure contexts
-      return new Promise<void>((resolve, reject) => {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'absolute';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
+    return new Promise<void>((resolve, reject) => {
+      // Try modern clipboard API first, but with proper error handling
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+          .then(() => resolve())
+          .catch(() => {
+            // If clipboard API fails, fall back to textarea method
+            fallbackCopyTextToClipboard(text, resolve, reject);
+          });
+      } else {
+        // Use fallback method directly
+        fallbackCopyTextToClipboard(text, resolve, reject);
+      }
+    });
+  };
 
-        try {
-          document.execCommand('copy');
-          textArea.remove();
-          resolve();
-        } catch (err) {
-          textArea.remove();
-          reject(err);
-        }
-      });
+  const fallbackCopyTextToClipboard = (text: string, resolve: () => void, reject: (err: any) => void) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+
+    // Make the textarea out of viewport
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      textArea.remove();
+
+      if (successful) {
+        resolve();
+      } else {
+        reject(new Error('Copy command was unsuccessful'));
+      }
+    } catch (err) {
+      textArea.remove();
+      reject(err);
     }
   };
 
