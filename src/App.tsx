@@ -731,18 +731,28 @@ const MessageActions: React.FC<{
           <head>
             <title>Hutech Solutions - Response</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 40px; }
-              h1 { color: #2563eb; }
-              h2 { color: #374151; }
-              .logo { margin-bottom: 20px; }
+              body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+              h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+              h2 { color: #374151; margin-top: 30px; }
+              h3 { color: #6b7280; }
+              .logo { text-align: center; margin-bottom: 30px; }
+              .tagline { text-align: center; font-style: italic; color: #6b7280; margin-bottom: 30px; }
+              .content { margin: 20px 0; }
               .links { margin-top: 20px; }
-              .links a { display: block; margin: 5px 0; }
+              .links a { display: block; margin: 8px 0; padding: 5px; background: #f3f4f6; text-decoration: none; border-radius: 4px; }
+              .links a:hover { background: #e5e7eb; }
+              .images img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #e5e7eb; border-radius: 8px; }
+              hr { border: none; border-top: 1px solid #e5e7eb; margin: 30px 0; }
             </style>
           </head>
           <body>
             <div class="logo">
-              <img src="https://hutechsolutions.com/wp-content/uploads/2024/08/hutech-logo-1.svg" alt="Hutech Solutions" style="height: 60px;">
+              <img src="https://cdn.builder.io/api/v1/image/assets%2F10441328364c47c595b473db8971cc31%2F1ba354186d5543baa8be89171a8f9823?format=webp&width=800" alt="Hutech Solutions" style="height: 80px;">
             </div>
+            <div class="tagline">
+              <strong>Connecting People and Technology</strong>
+            </div>
+            <hr>
       `;
 
       if (message.query) {
@@ -750,12 +760,35 @@ const MessageActions: React.FC<{
       }
 
       const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
-      htmlContent += `<h2>Answer</h2><p>${answerText}</p>`;
+      htmlContent += `<div class="content"><h2>Answer</h2><p>${answerText}</p></div>`;
 
+      // Add related content images
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        const itemsWithImages = message.response.related_content.filter(item => item.image);
+        if (itemsWithImages.length > 0) {
+          htmlContent += '<div class="images"><h2>Related Images</h2>';
+          itemsWithImages.forEach(item => {
+            htmlContent += `<h3>${item.title}</h3>`;
+            htmlContent += `<img src="${item.image}" alt="${item.title}">`;
+          });
+          htmlContent += '</div>';
+        }
+      }
+
+      // Add file links
       if (message.response?.file_links && message.response.file_links.length > 0) {
-        htmlContent += '<div class="links"><h2>Links</h2>';
+        htmlContent += '<div class="links"><h2>File Links</h2>';
         message.response.file_links.forEach(link => {
-          htmlContent += `<a href="${link.url}" target="_blank">${link.title}</a>`;
+          htmlContent += `<a href="${link.url}" target="_blank">📄 ${link.title}</a>`;
+        });
+        htmlContent += '</div>';
+      }
+
+      // Add related content URLs
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        htmlContent += '<div class="links"><h2>Related Pages</h2>';
+        message.response.related_content.forEach(item => {
+          htmlContent += `<a href="${item.url}" target="_blank">🔗 ${item.title}</a>`;
         });
         htmlContent += '</div>';
       }
