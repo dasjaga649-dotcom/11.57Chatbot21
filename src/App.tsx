@@ -478,6 +478,11 @@ const BotMessage: React.FC<{
           </div>
         )}
 
+        {/* Action Buttons */}
+        {message.text && (
+          <MessageActions message={message} />
+        )}
+
         {/* File Links */}
         {response?.file_links && response.file_links.length > 0 && (
           <FileLinksSection files={response.file_links} />
