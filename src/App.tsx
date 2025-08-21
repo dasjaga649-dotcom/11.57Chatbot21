@@ -149,11 +149,18 @@ function App() {
 
   const sendMessage = async (query?: string) => {
     const messageText = query || inputValue.trim();
-    if (!messageText) return;
+    if (!messageText || isTransitioning) return;
 
-    // Navigate to chat page immediately
-    setCurrentPage('chat');
-    setIsSearching(true);
+    // Start the search transition animation
+    setIsTransitioning(true);
+    setSearchInitiated(true);
+
+    // Wait for animations to complete before switching to chat page
+    setTimeout(() => {
+      setCurrentPage('chat');
+      setIsSearching(true);
+      setIsTransitioning(false);
+    }, 1200); // 1.2s total animation duration
 
     const userMessage: Message = {
       id: Date.now(),
