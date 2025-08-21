@@ -308,6 +308,7 @@ function App() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   className="client-search-input"
+                  disabled={isTransitioning}
                 />
                 <button
                   type="submit"
