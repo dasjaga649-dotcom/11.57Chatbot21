@@ -61,7 +61,6 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'client' | 'chat'>('client');
   const [isSearching, setIsSearching] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [pageTransitioning, setPageTransitioning] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages are added
@@ -150,15 +149,9 @@ function App() {
     const messageText = query || inputValue.trim();
     if (!messageText) return;
 
-    // Start page transition
-    setPageTransitioning(true);
-
-    // Navigate to chat page with smooth transition
-    setTimeout(() => {
-      setCurrentPage('chat');
-      setPageTransitioning(false);
-      setIsSearching(true);
-    }, 600);
+    // Navigate to chat page immediately
+    setCurrentPage('chat');
+    setIsSearching(true);
 
     const userMessage: Message = {
       id: Date.now(),
@@ -258,7 +251,7 @@ function App() {
 
   if (currentPage === 'client') {
     return (
-      <div className={`client-page ${pageTransitioning ? 'page-transition-exit-active' : ''}`}>
+      <div className="client-page">
         {/* Header */}
         <header className="client-header">
           <div className="header-content">
