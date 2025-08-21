@@ -13,6 +13,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   response?: BotResponse;
+  query?: string; // Store the original user question for bot messages
 }
 
 interface BotResponse {
@@ -61,7 +62,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'client' | 'chat'>('client');
   const [isSearching, setIsSearching] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [pageTransitioning, setPageTransitioning] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [searchInitiated, setSearchInitiated] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages are added
@@ -115,7 +117,7 @@ function App() {
       category: 'Services'
     },
     {
-      icon: '🏭',
+      icon: '��',
       title: 'Industries',
       description: 'What industries do we serve?',
       category: 'Industries'
@@ -148,17 +150,18 @@ function App() {
 
   const sendMessage = async (query?: string) => {
     const messageText = query || inputValue.trim();
-    if (!messageText) return;
+    if (!messageText || isTransitioning) return;
 
-    // Start page transition
-    setPageTransitioning(true);
+    // Start the search transition animation
+    setIsTransitioning(true);
+    setSearchInitiated(true);
 
-    // Navigate to chat page with smooth transition
+    // Wait for animations to complete before switching to chat page
     setTimeout(() => {
       setCurrentPage('chat');
-      setPageTransitioning(false);
       setIsSearching(true);
-    }, 600);
+      setIsTransitioning(false);
+    }, 1200); // 1.2s total animation duration
 
     const userMessage: Message = {
       id: Date.now(),
@@ -204,7 +207,8 @@ function App() {
         text: botResponse.answer || "Sorry, I couldn't process your request.",
         isUser: false,
         timestamp: new Date(),
-        response: botResponse
+        response: botResponse,
+        query: messageText // Store the user's question
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -214,7 +218,8 @@ function App() {
         id: Date.now() + 1,
         text: "Sorry, I'm having trouble connecting to the server. Please make sure your backend is running on http://localhost:3001",
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        query: messageText
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -258,7 +263,7 @@ function App() {
 
   if (currentPage === 'client') {
     return (
-      <div className={`client-page ${pageTransitioning ? 'page-transition-exit-active' : ''}`}>
+      <div className={`client-page ${isTransitioning ? 'transitioning' : ''}`}>
         {/* Header */}
         <header className="client-header">
           <div className="header-content">
@@ -297,7 +302,7 @@ function App() {
           </div>
 
           {/* Search Bar */}
-          <div className="client-search-container">
+          <div className={`client-search-container ${isTransitioning ? 'search-moving' : ''}`}>
             <form onSubmit={handleFormSubmit} className="client-search-form">
               <div className="search-input-wrapper">
                 <input
@@ -306,12 +311,12 @@ function App() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   className="client-search-input"
-                  disabled={pageTransitioning}
+                  disabled={isTransitioning}
                 />
                 <button
                   type="submit"
                   className="search-send-button"
-                  disabled={pageTransitioning || !inputValue.trim()}
+                  disabled={!inputValue.trim() || isTransitioning}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 713.27 20.876L5.999 12zm0 0h7.5" />
@@ -322,7 +327,7 @@ function App() {
           </div>
 
           {/* Question Cards - Horizontal Scroll */}
-          <div className="question-cards-container">
+          <div className={`question-cards-container ${isTransitioning ? 'cards-disappearing' : ''}`}>
             <div className="question-cards-scroll">
               {questionCards.map((card, index) => (
                 <div
@@ -346,7 +351,7 @@ function App() {
 
   // Chat Page
   return (
-    <div className={`bg-white body page-transition-enter-active ${isSearching ? 'chat-searching' : ''}`} id='body'>
+    <div className={`bg-white body ${searchInitiated ? 'page-transition-enter-active' : ''} ${isSearching ? 'chat-searching' : ''}`} id='body'>
       {/* Chat History Panel */}
       <div id="chat-history" className="chat-history-container">
         {messages.map((message) => (
@@ -452,6 +457,518 @@ const UserMessage: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
+const MessageActions: React.FC<{
+  message: Message;
+}> = ({ message }) => {
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowExportDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const copyToClipboard = (text: string) => {
+    return new Promise<void>((resolve, reject) => {
+      // Try modern clipboard API first, but with proper error handling
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+          .then(() => resolve())
+          .catch(() => {
+            // If clipboard API fails, fall back to textarea method
+            fallbackCopyTextToClipboard(text, resolve, reject);
+          });
+      } else {
+        // Use fallback method directly
+        fallbackCopyTextToClipboard(text, resolve, reject);
+      }
+    });
+  };
+
+  const fallbackCopyTextToClipboard = (text: string, resolve: () => void, reject: (err: any) => void) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+
+    // Make the textarea out of viewport but still accessible
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    textArea.setAttribute('readonly', '');
+    textArea.style.userSelect = 'text';
+
+    document.body.appendChild(textArea);
+
+    // Focus and select with better browser compatibility
+    if (textArea.select) {
+      textArea.focus();
+      textArea.select();
+    } else if (textArea.setSelectionRange) {
+      textArea.focus();
+      textArea.setSelectionRange(0, textArea.value.length);
+    }
+
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        resolve();
+      } else {
+        // Final fallback: try selection API
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(textArea);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          const copySuccess = document.execCommand('copy');
+          selection?.removeAllRanges();
+
+          if (copySuccess) {
+            resolve();
+          } else {
+            reject(new Error('All copy methods failed'));
+          }
+        } catch (selectionError) {
+          reject(new Error('Copy command and selection both failed'));
+        }
+      }
+    } catch (err) {
+      document.body.removeChild(textArea);
+      reject(err);
+    }
+  };
+
+  const handleCopy = () => {
+    let textToCopy = '';
+
+    // Add question (if available from message context)
+    if (message.query) {
+      textToCopy += `Question: ${message.query}\n\n`;
+    }
+
+    // Add answer in plain text
+    const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+    textToCopy += `Answer:\n${answerText}\n\n`;
+
+    // Add related content images if available
+    if (message.response?.related_content && message.response.related_content.length > 0) {
+      const itemsWithImages = message.response.related_content.filter(item => item.image);
+      if (itemsWithImages.length > 0) {
+        textToCopy += 'Related Images:\n';
+        itemsWithImages.forEach(item => {
+          textToCopy += `${item.title}: ${item.image}\n`;
+        });
+        textToCopy += '\n';
+      }
+    }
+
+    // Add file links if available
+    if (message.response?.file_links && message.response.file_links.length > 0) {
+      textToCopy += 'File Links:\n';
+      message.response.file_links.forEach(link => {
+        textToCopy += `${link.title}: ${link.url}\n`;
+      });
+      textToCopy += '\n';
+    }
+
+    // Add related content page URLs
+    if (message.response?.related_content && message.response.related_content.length > 0) {
+      textToCopy += 'Related Pages:\n';
+      message.response.related_content.forEach(item => {
+        textToCopy += `${item.title}: ${item.url}\n`;
+      });
+    }
+
+    copyToClipboard(textToCopy)
+      .then(() => {
+        alert('Content copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Copy failed:', err);
+        // Show the content in a modal or alert for manual copying
+        const copyText = `Copy failed due to browser restrictions. Please manually copy this content:\n\n${textToCopy}`;
+        alert(copyText);
+      });
+  };
+
+  const handleShare = () => {
+    const currentUrl = window.location.href;
+    copyToClipboard(currentUrl)
+      .then(() => {
+        alert('URL copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Share failed:', err);
+        // Show URL in a way that's easy to copy
+        const shareText = `Share failed due to browser restrictions. Please manually copy this URL:\n\n${currentUrl}`;
+        alert(shareText);
+      });
+  };
+
+  const generatePDF = () => {
+    try {
+      // Create content for PDF with uploaded logo
+      let content = '';
+
+      // Add Hutech logo reference (uploaded image)
+      content += 'HUTECH SOLUTIONS\n';
+      content += 'Logo: https://cdn.builder.io/api/v1/image/assets%2F10441328364c47c595b473db8971cc31%2F1ba354186d5543baa8be89171a8f9823?format=webp&width=800\n';
+      content += 'Connecting People and Technology\n\n';
+
+      if (message.query) {
+        content += `QUESTION: ${message.query}\n\n`;
+      }
+
+      const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+      content += `ANSWER:\n${answerText}\n\n`;
+
+      // Add related content images if available
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        content += 'RELATED IMAGES:\n';
+        message.response.related_content.forEach(item => {
+          if (item.image) {
+            content += `${item.title}: ${item.image}\n`;
+          }
+        });
+        content += '\n';
+      }
+
+      // Add file links
+      if (message.response?.file_links && message.response.file_links.length > 0) {
+        content += 'FILE LINKS:\n';
+        message.response.file_links.forEach(link => {
+          content += `${link.title}: ${link.url}\n`;
+        });
+        content += '\n';
+      }
+
+      // Add related content URLs
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        content += 'PAGE URLS:\n';
+        message.response.related_content.forEach(item => {
+          content += `${item.title}: ${item.url}\n`;
+        });
+      }
+
+      // Create a simple text-based PDF substitute
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hutech-response.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Content downloaded as text file (PDF library not available in this environment)');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('PDF export failed. Please try again.');
+    }
+  };
+
+  const generateMarkdown = () => {
+    try {
+      let markdown = '';
+
+      // Add Hutech logo (uploaded image)
+      markdown += '![Hutech Solutions](https://cdn.builder.io/api/v1/image/assets%2F10441328364c47c595b473db8971cc31%2F1ba354186d5543baa8be89171a8f9823?format=webp&width=800)\n\n';
+      markdown += '# Hutech Solutions\n';
+      markdown += '*Connecting People and Technology*\n\n';
+      markdown += '---\n\n';
+
+      if (message.query) {
+        markdown += `# ${message.query}\n\n`;
+      }
+
+      const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+      markdown += `## Answer\n\n${answerText}\n\n`;
+
+      // Add related content images
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        const itemsWithImages = message.response.related_content.filter(item => item.image);
+        if (itemsWithImages.length > 0) {
+          markdown += '## Related Images\n\n';
+          itemsWithImages.forEach(item => {
+            markdown += `### ${item.title}\n`;
+            markdown += `![${item.title}](${item.image})\n\n`;
+          });
+        }
+      }
+
+      // Add file links
+      if (message.response?.file_links && message.response.file_links.length > 0) {
+        markdown += '## File Links\n\n';
+        message.response.file_links.forEach(link => {
+          markdown += `- [📄 ${link.title}](${link.url})\n`;
+        });
+        markdown += '\n';
+      }
+
+      // Add related content URLs
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        markdown += '## Related Pages\n\n';
+        message.response.related_content.forEach(item => {
+          markdown += `- [🔗 ${item.title}](${item.url})\n`;
+        });
+      }
+
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hutech-response.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Markdown generation failed:', error);
+      alert('Markdown export failed. Please try again.');
+    }
+  };
+
+  const generateDOCX = () => {
+    try {
+      // Create content for DOCX (using HTML format as fallback)
+      let htmlContent = `
+        <html>
+          <head>
+            <title>Hutech Solutions - Response</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+              h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+              h2 { color: #374151; margin-top: 30px; }
+              h3 { color: #6b7280; }
+              .logo { text-align: center; margin-bottom: 30px; }
+              .tagline { text-align: center; font-style: italic; color: #6b7280; margin-bottom: 30px; }
+              .content { margin: 20px 0; }
+              .links { margin-top: 20px; }
+              .links a { display: block; margin: 8px 0; padding: 5px; background: #f3f4f6; text-decoration: none; border-radius: 4px; }
+              .links a:hover { background: #e5e7eb; }
+              .images img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #e5e7eb; border-radius: 8px; }
+              hr { border: none; border-top: 1px solid #e5e7eb; margin: 30px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="logo">
+              <img src="https://cdn.builder.io/api/v1/image/assets%2F10441328364c47c595b473db8971cc31%2F1ba354186d5543baa8be89171a8f9823?format=webp&width=800" alt="Hutech Solutions" style="height: 80px;">
+            </div>
+            <div class="tagline">
+              <strong>Connecting People and Technology</strong>
+            </div>
+            <hr>
+      `;
+
+      if (message.query) {
+        htmlContent += `<h1>${message.query}</h1>`;
+      }
+
+      const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+      htmlContent += `<div class="content"><h2>Answer</h2><p>${answerText}</p></div>`;
+
+      // Add related content images
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        const itemsWithImages = message.response.related_content.filter(item => item.image);
+        if (itemsWithImages.length > 0) {
+          htmlContent += '<div class="images"><h2>Related Images</h2>';
+          itemsWithImages.forEach(item => {
+            htmlContent += `<h3>${item.title}</h3>`;
+            htmlContent += `<img src="${item.image}" alt="${item.title}">`;
+          });
+          htmlContent += '</div>';
+        }
+      }
+
+      // Add file links
+      if (message.response?.file_links && message.response.file_links.length > 0) {
+        htmlContent += '<div class="links"><h2>File Links</h2>';
+        message.response.file_links.forEach(link => {
+          htmlContent += `<a href="${link.url}" target="_blank">📄 ${link.title}</a>`;
+        });
+        htmlContent += '</div>';
+      }
+
+      // Add related content URLs
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        htmlContent += '<div class="links"><h2>Related Pages</h2>';
+        message.response.related_content.forEach(item => {
+          htmlContent += `<a href="${item.url}" target="_blank">🔗 ${item.title}</a>`;
+        });
+        htmlContent += '</div>';
+      }
+
+      htmlContent += '</body></html>';
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hutech-response.html';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Content downloaded as HTML file (DOCX library not available in this environment)');
+    } catch (error) {
+      console.error('DOCX generation failed:', error);
+      alert('DOCX export failed. Please try again.');
+    }
+  };
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    if (isDisliked) setIsDisliked(false);
+  };
+
+  const handleDislike = () => {
+    setIsDisliked(!isDisliked);
+    if (isLiked) setIsLiked(false);
+  };
+
+  return (
+    <div className="message-actions flex items-center justify-between px-4 py-2">
+      {/* Left side: Share and Export */}
+      <div className="flex items-center gap-2">
+        {/* Share Button */}
+        <button
+          onClick={handleShare}
+          className="action-button flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+          title="Share URL"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+          </svg>
+          Share
+        </button>
+
+        {/* Export Button with Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowExportDropdown(!showExportDropdown)}
+            className="action-button flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+            title="Export content"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Export
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-3 h-3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+
+          {showExportDropdown && (
+            <div className="export-dropdown absolute left-0 top-full mt-1 bg-white rounded-md shadow-lg z-10 min-w-32">
+              <button
+                onClick={() => {
+                  try {
+                    generatePDF();
+                    setShowExportDropdown(false);
+                  } catch (error) {
+                    console.error('PDF export error:', error);
+                    alert('PDF export failed. Please try again.');
+                  }
+                }}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                title="Export as PDF (text format)"
+              >
+                PDF
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    generateMarkdown();
+                    setShowExportDropdown(false);
+                  } catch (error) {
+                    console.error('Markdown export error:', error);
+                    alert('Markdown export failed. Please try again.');
+                  }
+                }}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                title="Export as Markdown"
+              >
+                Markdown
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    generateDOCX();
+                    setShowExportDropdown(false);
+                  } catch (error) {
+                    console.error('DOCX export error:', error);
+                    alert('DOCX export failed. Please try again.');
+                  }
+                }}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                title="Export as DOCX (HTML format)"
+              >
+                DOCX
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right side: Copy, Like, and Dislike */}
+      <div className="flex items-center gap-2">
+        {/* Copy Button */}
+        <button
+          onClick={handleCopy}
+          className="action-button flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
+          title="Copy content"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+          </svg>
+          Copy
+        </button>
+
+        {/* Like Button */}
+        <button
+          onClick={handleLike}
+          className={`action-button flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm ${
+            isLiked ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+          }`}
+          title="Like"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.398.83 1.169 1.398 2.02 1.398h.716c.83 0 1.598-.481 1.998-1.25a.739.739 0 00.109-.376c0-.621-.504-1.125-1.125-1.125H9.375c-.621 0-1.125.504-1.125 1.125v.375M5.904 18.75L7.5 16.5H5.904z" />
+          </svg>
+        </button>
+
+        {/* Dislike Button */}
+        <button
+          onClick={handleDislike}
+          className={`action-button flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm ${
+            isDisliked ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+          }`}
+          title="Dislike"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill={isDisliked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4 rotate-180">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.398.83 1.169 1.398 2.02 1.398h.716c.83 0 1.598-.481 1.998-1.25a.739.739 0 00.109-.376c0-.621-.504-1.125-1.125-1.125H9.375c-.621 0-1.125.504-1.125 1.125v.375M5.904 18.75L7.5 16.5H5.904z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const BotMessage: React.FC<{
   message: Message;
   onSuggestionClick: (suggestion: string) => void;
@@ -474,6 +991,11 @@ const BotMessage: React.FC<{
               __html: marked(renderIcons(renderTables(preprocessResponse(message.text), response?.tables || []))) as string
             }} />
           </div>
+        )}
+
+        {/* Action Buttons */}
+        {message.text && (
+          <MessageActions message={message} />
         )}
 
         {/* File Links */}
@@ -614,8 +1136,11 @@ const SuggestionsSection: React.FC<{
         <button
           key={index}
           onClick={() => onSuggestionClick(suggestion)}
-          className="suggestion-button block w-full text-left p-4 my-2 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-700 shadow-sm hover:bg-gray-100">
-          {suggestion}
+          className="suggestion-button flex items-center justify-between w-full text-left p-4 my-2 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-700 shadow-sm hover:bg-gray-100">
+          <span>{suggestion}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 text-gray-400">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
         </button>
       ))}
     </div>

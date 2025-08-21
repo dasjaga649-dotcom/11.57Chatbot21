@@ -110,6 +110,10 @@
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
+        .suggestion-button:hover svg {
+          color: #6b7280;
+        }
+
         /* Custom carousel styling */
         .card-carousel-container {
           display: flex;
@@ -241,36 +245,6 @@
           transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Page Transition Animations */
-        .page-transition-enter-active {
-          animation: slideInFromRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        .page-transition-exit-active {
-          animation: slideOutToLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes slideInFromRight {
-          0% {
-            opacity: 0;
-            transform: translateX(100px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes slideOutToLeft {
-          0% {
-            opacity: 1;
-            transform: translateX(0);
-          }
-          100% {
-            opacity: 0;
-            transform: translateX(-100px);
-          }
-        }
 
         /* Chat Search Animation */
         .chat-searching {
@@ -1018,4 +992,30 @@
           outline: none;
           ring: 2px;
           ring-color: #9ca3af;
+        }
+
+        /* Import search transition animations */
+        @import url('./search-animations.css');
+
+        /* Message Action Buttons */
+        .message-actions {
+          border-top: 1px solid #f3f4f6;
+          background: transparent;
+        }
+
+        .action-button {
+          transition: all 0.2s ease-in-out;
+        }
+
+        .action-button:hover {
+          transform: translateY(-1px);
+        }
+
+        .export-dropdown {
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+
+        .export-dropdown button:hover {
+          background-color: #f9fafb;
         }
