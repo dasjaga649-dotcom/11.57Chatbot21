@@ -668,8 +668,11 @@ const MessageActions: React.FC<{
     try {
       let markdown = '';
 
-      // Add Hutech logo
-      markdown += '![Hutech Solutions](https://hutechsolutions.com/wp-content/uploads/2024/08/hutech-logo-1.svg)\n\n';
+      // Add Hutech logo (uploaded image)
+      markdown += '![Hutech Solutions](https://cdn.builder.io/api/v1/image/assets%2F10441328364c47c595b473db8971cc31%2F1ba354186d5543baa8be89171a8f9823?format=webp&width=800)\n\n';
+      markdown += '# Hutech Solutions\n';
+      markdown += '*Connecting People and Technology*\n\n';
+      markdown += '---\n\n';
 
       if (message.query) {
         markdown += `# ${message.query}\n\n`;
@@ -678,10 +681,32 @@ const MessageActions: React.FC<{
       const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
       markdown += `## Answer\n\n${answerText}\n\n`;
 
+      // Add related content images
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        const itemsWithImages = message.response.related_content.filter(item => item.image);
+        if (itemsWithImages.length > 0) {
+          markdown += '## Related Images\n\n';
+          itemsWithImages.forEach(item => {
+            markdown += `### ${item.title}\n`;
+            markdown += `![${item.title}](${item.image})\n\n`;
+          });
+        }
+      }
+
+      // Add file links
       if (message.response?.file_links && message.response.file_links.length > 0) {
-        markdown += '## Links\n\n';
+        markdown += '## File Links\n\n';
         message.response.file_links.forEach(link => {
-          markdown += `- [${link.title}](${link.url})\n`;
+          markdown += `- [📄 ${link.title}](${link.url})\n`;
+        });
+        markdown += '\n';
+      }
+
+      // Add related content URLs
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        markdown += '## Related Pages\n\n';
+        message.response.related_content.forEach(item => {
+          markdown += `- [🔗 ${item.title}](${item.url})\n`;
         });
       }
 
