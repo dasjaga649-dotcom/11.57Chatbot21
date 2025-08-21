@@ -569,11 +569,32 @@ const MessageActions: React.FC<{
     const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
     textToCopy += `Answer:\n${answerText}\n\n`;
 
+    // Add related content images if available
+    if (message.response?.related_content && message.response.related_content.length > 0) {
+      const itemsWithImages = message.response.related_content.filter(item => item.image);
+      if (itemsWithImages.length > 0) {
+        textToCopy += 'Related Images:\n';
+        itemsWithImages.forEach(item => {
+          textToCopy += `${item.title}: ${item.image}\n`;
+        });
+        textToCopy += '\n';
+      }
+    }
+
     // Add file links if available
     if (message.response?.file_links && message.response.file_links.length > 0) {
-      textToCopy += 'Links:\n';
+      textToCopy += 'File Links:\n';
       message.response.file_links.forEach(link => {
         textToCopy += `${link.title}: ${link.url}\n`;
+      });
+      textToCopy += '\n';
+    }
+
+    // Add related content page URLs
+    if (message.response?.related_content && message.response.related_content.length > 0) {
+      textToCopy += 'Related Pages:\n';
+      message.response.related_content.forEach(item => {
+        textToCopy += `${item.title}: ${item.url}\n`;
       });
     }
 
