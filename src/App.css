@@ -989,3 +989,6 @@
           ring: 2px;
           ring-color: #9ca3af;
         }
+
+        /* Import search transition animations */
+        @import url('./search-animations.css');
