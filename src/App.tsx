@@ -560,7 +560,7 @@ const MessageActions: React.FC<{
   };
 
   return (
-    <div className="flex items-center justify-start gap-2 px-4 py-2 border-t border-gray-100">
+    <div className="message-actions flex items-center justify-start gap-2 px-4 py-2">
       {/* Copy Button */}
       <button
         onClick={handleCopy}
