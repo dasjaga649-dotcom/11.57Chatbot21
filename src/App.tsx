@@ -500,7 +500,7 @@ const MessageActions: React.FC<{
     const textArea = document.createElement('textarea');
     textArea.value = text;
 
-    // Make the textarea out of viewport
+    // Make the textarea out of viewport but still accessible
     textArea.style.position = 'fixed';
     textArea.style.left = '-999999px';
     textArea.style.top = '-999999px';
@@ -511,22 +511,48 @@ const MessageActions: React.FC<{
     textArea.style.outline = 'none';
     textArea.style.boxShadow = 'none';
     textArea.style.background = 'transparent';
+    textArea.setAttribute('readonly', '');
+    textArea.style.userSelect = 'text';
 
     document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+
+    // Focus and select with better browser compatibility
+    if (textArea.select) {
+      textArea.focus();
+      textArea.select();
+    } else if (textArea.setSelectionRange) {
+      textArea.focus();
+      textArea.setSelectionRange(0, textArea.value.length);
+    }
 
     try {
       const successful = document.execCommand('copy');
-      textArea.remove();
+      document.body.removeChild(textArea);
 
       if (successful) {
         resolve();
       } else {
-        reject(new Error('Copy command was unsuccessful'));
+        // Final fallback: try selection API
+        try {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(textArea);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          const copySuccess = document.execCommand('copy');
+          selection?.removeAllRanges();
+
+          if (copySuccess) {
+            resolve();
+          } else {
+            reject(new Error('All copy methods failed'));
+          }
+        } catch (selectionError) {
+          reject(new Error('Copy command and selection both failed'));
+        }
       }
     } catch (err) {
-      textArea.remove();
+      document.body.removeChild(textArea);
       reject(err);
     }
   };
