@@ -605,12 +605,13 @@ const MessageActions: React.FC<{
 
   const generatePDF = () => {
     try {
-      // Create content for PDF
+      // Create content for PDF with uploaded logo
       let content = '';
 
-      // Add Hutech logo reference
+      // Add Hutech logo reference (uploaded image)
       content += 'HUTECH SOLUTIONS\n';
-      content += 'https://hutechsolutions.com/wp-content/uploads/2024/08/hutech-logo-1.svg\n\n';
+      content += 'Logo: https://cdn.builder.io/api/v1/image/assets%2F10441328364c47c595b473db8971cc31%2F1ba354186d5543baa8be89171a8f9823?format=webp&width=800\n';
+      content += 'Connecting People and Technology\n\n';
 
       if (message.query) {
         content += `QUESTION: ${message.query}\n\n`;
@@ -619,10 +620,31 @@ const MessageActions: React.FC<{
       const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
       content += `ANSWER:\n${answerText}\n\n`;
 
+      // Add related content images if available
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        content += 'RELATED IMAGES:\n';
+        message.response.related_content.forEach(item => {
+          if (item.image) {
+            content += `${item.title}: ${item.image}\n`;
+          }
+        });
+        content += '\n';
+      }
+
+      // Add file links
       if (message.response?.file_links && message.response.file_links.length > 0) {
-        content += 'LINKS:\n';
+        content += 'FILE LINKS:\n';
         message.response.file_links.forEach(link => {
           content += `${link.title}: ${link.url}\n`;
+        });
+        content += '\n';
+      }
+
+      // Add related content URLs
+      if (message.response?.related_content && message.response.related_content.length > 0) {
+        content += 'PAGE URLS:\n';
+        message.response.related_content.forEach(item => {
+          content += `${item.title}: ${item.url}\n`;
         });
       }
 
