@@ -602,7 +602,7 @@ const MessageActions: React.FC<{
         </button>
 
         {showExportDropdown && (
-          <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-32">
+          <div className="export-dropdown absolute left-0 top-full mt-1 bg-white rounded-md shadow-lg z-10 min-w-32">
             <button
               onClick={() => { generatePDF(); setShowExportDropdown(false); }}
               className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
