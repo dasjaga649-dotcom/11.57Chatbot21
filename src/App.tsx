@@ -479,6 +479,34 @@ const MessageActions: React.FC<{
     };
   }, []);
 
+  const copyToClipboard = (text: string) => {
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for older browsers or insecure contexts
+      return new Promise<void>((resolve, reject) => {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'absolute';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand('copy');
+          textArea.remove();
+          resolve();
+        } catch (err) {
+          textArea.remove();
+          reject(err);
+        }
+      });
+    }
+  };
+
   const handleCopy = () => {
     let textToCopy = '';
 
@@ -499,16 +527,26 @@ const MessageActions: React.FC<{
       });
     }
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      alert('Content copied to clipboard!');
-    });
+    copyToClipboard(textToCopy)
+      .then(() => {
+        alert('Content copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Copy failed:', err);
+        alert('Copy failed. Please select and copy the text manually.');
+      });
   };
 
   const handleShare = () => {
     const currentUrl = window.location.href;
-    navigator.clipboard.writeText(currentUrl).then(() => {
-      alert('URL copied to clipboard!');
-    });
+    copyToClipboard(currentUrl)
+      .then(() => {
+        alert('URL copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Share failed:', err);
+        alert('Share failed. Please copy the URL manually: ' + currentUrl);
+      });
   };
 
   const generatePDF = () => {
