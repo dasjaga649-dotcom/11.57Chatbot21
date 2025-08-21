@@ -586,7 +586,7 @@ const MessageActions: React.FC<{
       </button>
 
       {/* Export Button with Dropdown */}
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowExportDropdown(!showExportDropdown)}
           className="flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors text-sm"
