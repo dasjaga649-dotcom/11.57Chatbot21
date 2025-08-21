@@ -111,7 +111,7 @@ function App() {
       category: 'Location'
     },
     {
-      icon: '⚙️',
+      icon: '⚙��',
       title: 'Services',
       description: 'What services do we provide?',
       category: 'Services'
@@ -550,41 +550,130 @@ const MessageActions: React.FC<{
   };
 
   const generatePDF = () => {
-    // This would require a PDF library like jsPDF
-    console.log('PDF export functionality - requires PDF library implementation');
-    alert('PDF export feature coming soon!');
+    try {
+      // Create content for PDF
+      let content = '';
+
+      // Add Hutech logo reference
+      content += 'HUTECH SOLUTIONS\n';
+      content += 'https://hutechsolutions.com/wp-content/uploads/2024/08/hutech-logo-1.svg\n\n';
+
+      if (message.query) {
+        content += `QUESTION: ${message.query}\n\n`;
+      }
+
+      const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+      content += `ANSWER:\n${answerText}\n\n`;
+
+      if (message.response?.file_links && message.response.file_links.length > 0) {
+        content += 'LINKS:\n';
+        message.response.file_links.forEach(link => {
+          content += `${link.title}: ${link.url}\n`;
+        });
+      }
+
+      // Create a simple text-based PDF substitute
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hutech-response.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Content downloaded as text file (PDF library not available in this environment)');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('PDF export failed. Please try again.');
+    }
   };
 
   const generateMarkdown = () => {
-    let markdown = '';
+    try {
+      let markdown = '';
 
-    if (message.query) {
-      markdown += `# ${message.query}\n\n`;
+      // Add Hutech logo
+      markdown += '![Hutech Solutions](https://hutechsolutions.com/wp-content/uploads/2024/08/hutech-logo-1.svg)\n\n';
+
+      if (message.query) {
+        markdown += `# ${message.query}\n\n`;
+      }
+
+      const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+      markdown += `## Answer\n\n${answerText}\n\n`;
+
+      if (message.response?.file_links && message.response.file_links.length > 0) {
+        markdown += '## Links\n\n';
+        message.response.file_links.forEach(link => {
+          markdown += `- [${link.title}](${link.url})\n`;
+        });
+      }
+
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hutech-response.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Markdown generation failed:', error);
+      alert('Markdown export failed. Please try again.');
     }
-
-    const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
-    markdown += `## Answer\n\n${answerText}\n\n`;
-
-    if (message.response?.file_links && message.response.file_links.length > 0) {
-      markdown += '## Links\n\n';
-      message.response.file_links.forEach(link => {
-        markdown += `- [${link.title}](${link.url})\n`;
-      });
-    }
-
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'hutech-response.md';
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const generateDOCX = () => {
-    // This would require a DOCX library
-    console.log('DOCX export functionality - requires DOCX library implementation');
-    alert('DOCX export feature coming soon!');
+    try {
+      // Create content for DOCX (using HTML format as fallback)
+      let htmlContent = `
+        <html>
+          <head>
+            <title>Hutech Solutions - Response</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              h1 { color: #2563eb; }
+              h2 { color: #374151; }
+              .logo { margin-bottom: 20px; }
+              .links { margin-top: 20px; }
+              .links a { display: block; margin: 5px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="logo">
+              <img src="https://hutechsolutions.com/wp-content/uploads/2024/08/hutech-logo-1.svg" alt="Hutech Solutions" style="height: 60px;">
+            </div>
+      `;
+
+      if (message.query) {
+        htmlContent += `<h1>${message.query}</h1>`;
+      }
+
+      const answerText = message.text?.replace(/<[^>]*>/g, '') || '';
+      htmlContent += `<h2>Answer</h2><p>${answerText}</p>`;
+
+      if (message.response?.file_links && message.response.file_links.length > 0) {
+        htmlContent += '<div class="links"><h2>Links</h2>';
+        message.response.file_links.forEach(link => {
+          htmlContent += `<a href="${link.url}" target="_blank">${link.title}</a>`;
+        });
+        htmlContent += '</div>';
+      }
+
+      htmlContent += '</body></html>';
+
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hutech-response.html';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Content downloaded as HTML file (DOCX library not available in this environment)');
+    } catch (error) {
+      console.error('DOCX generation failed:', error);
+      alert('DOCX export failed. Please try again.');
+    }
   };
 
   const handleLike = () => {
