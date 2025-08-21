@@ -141,8 +141,10 @@
         const images = answerDiv.querySelectorAll('img');
         images.forEach(img => {
           img.onerror = () => {
-            console.error('Image failed to load:', img.src);
-            img.parentElement.removeChild(img);
+            // Silently handle broken images - remove them from DOM
+            if (img.parentElement) {
+              img.parentElement.removeChild(img);
+            }
           };
         });
         contentContainer.appendChild(answerDiv);
