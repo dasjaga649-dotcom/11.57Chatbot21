@@ -1,6 +1,31 @@
 /* Modern Search Transition Animations */
 
 /* Client page transition states */
+.client-page.transitioning {
+  position: relative;
+}
+
+.client-page.transitioning::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(2px);
+  z-index: 1;
+  animation: fadeInBackdrop 0.4s ease-out forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+@keyframes fadeInBackdrop {
+  to {
+    opacity: 1;
+  }
+}
+
 .client-page.transitioning .welcome-section {
   animation: fadeOutUp 0.6s ease-out forwards;
 }
