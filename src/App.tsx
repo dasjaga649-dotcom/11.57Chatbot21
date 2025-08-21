@@ -260,7 +260,7 @@ function App() {
 
   if (currentPage === 'client') {
     return (
-      <div className="client-page">
+      <div className={`client-page ${isTransitioning ? 'transitioning' : ''}`}>
         {/* Header */}
         <header className="client-header">
           <div className="header-content">
@@ -299,7 +299,7 @@ function App() {
           </div>
 
           {/* Search Bar */}
-          <div className="client-search-container">
+          <div className={`client-search-container ${isTransitioning ? 'search-moving' : ''}`}>
             <form onSubmit={handleFormSubmit} className="client-search-form">
               <div className="search-input-wrapper">
                 <input
@@ -323,7 +323,7 @@ function App() {
           </div>
 
           {/* Question Cards - Horizontal Scroll */}
-          <div className="question-cards-container">
+          <div className={`question-cards-container ${isTransitioning ? 'cards-disappearing' : ''}`}>
             <div className="question-cards-scroll">
               {questionCards.map((card, index) => (
                 <div
