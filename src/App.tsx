@@ -61,6 +61,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'client' | 'chat'>('client');
   const [isSearching, setIsSearching] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [searchInitiated, setSearchInitiated] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages are added
